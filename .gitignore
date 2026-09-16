@@ -1,0 +1,5 @@
+node_modules/
+
+# Certificados generados localmente (no subir claves privadas)
+certs/key.pem
+certs/cert.pem

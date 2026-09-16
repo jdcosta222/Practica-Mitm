@@ -1,0 +1,10 @@
+{
+  "name": "mitm-practica",
+  "version": "1.0.0",
+  "description": "Práctica Man-in-the-Middle — Demo educativa local",
+  "scripts": {
+    "servidor":  "node servidor-legitimo.js",
+    "atacante":  "node atacante-mitm.js",
+    "seguro":    "node servidor-seguro.js"
+  }
+}

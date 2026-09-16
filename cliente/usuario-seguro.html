@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BancoDemo — Versión Segura (HTTPS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #070c14;
+    --surface: #0e1623;
+    --surf2:   #162033;
+    --border:  #1e2d45;
+    --blue:    #3b82f6;
+    --green:   #10b981;
+    --yellow:  #f59e0b;
+    --red:     #ef4444;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+    --font-ui: 'Inter', sans-serif;
+    --font-m:  'JetBrains Mono', monospace;
+  }
+
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--font-ui); min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 32px 16px; gap: 20px;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    width: 100%; max-width: 520px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .topbar-logo { font-size: 18px; font-weight: 600; }
+  .topbar-logo span { color: var(--blue); }
+  .https-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: #1e3a5f22; border: 1px solid #3b82f640;
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 12px; color: var(--blue); font-family: var(--font-m);
+  }
+
+  /* ── DEFENSA BANNER ── */
+  .defensa-banner {
+    width: 100%; max-width: 520px;
+    background: #0d2340; border: 1px solid #3b82f640;
+    border-radius: 10px; padding: 16px;
+  }
+  .defensa-title { font-size: 12px; font-weight: 600; color: var(--blue); margin-bottom: 10px; letter-spacing:.04em; }
+  .defensa-item  { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+  .defensa-item:last-child { margin-bottom: 0; }
+  .defensa-check { color: var(--green); flex-shrink: 0; font-family: var(--font-m); }
+  .defensa-text  { color: var(--muted); line-height: 1.5; }
+  .defensa-text strong { color: #93c5fd; }
+
+  /* ── CARD ── */
+  .card {
+    width: 100%; max-width: 520px;
+    background: var(--surface); border: 1px solid var(--blue);
+    border-radius: 14px; padding: 32px;
+  }
+  .card-title { font-size: 20px; font-weight: 600; }
+  .card-sub   { font-size: 13px; color: var(--muted); margin-top: 4px; margin-bottom: 24px; }
+
+  label  { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+  .field { margin-bottom: 18px; }
+  input[type="text"], input[type="password"], input[type="number"] {
+    width: 100%; background: var(--surf2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: var(--font-m);
+    font-size: 14px; padding: 10px 14px; outline: none; transition: border-color .2s;
+  }
+  input:focus { border-color: var(--blue); }
+
+  .btn {
+    width: 100%; padding: 11px; border-radius: 8px; border: none;
+    background: var(--blue); color: #fff;
+    font-family: var(--font-ui); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: opacity .2s;
+  }
+  .btn:hover    { opacity: .85; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  .btn-outline {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font-ui);
+    font-size: 13px; padding: 8px 16px; border-radius: 8px;
+    cursor: pointer; transition: all .2s;
+  }
+  .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+  .route-indicator {
+    font-family: var(--font-m); font-size: 11px;
+    color: var(--muted); text-align: center; margin-top: 12px;
+  }
+  .route-indicator span { color: var(--blue); }
+
+  /* ── LOG ── */
+  .log-panel {
+    width: 100%; max-width: 520px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+  }
+  .log-header {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .05em;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.active { background: var(--blue); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.3 } }
+  .log-body {
+    padding: 16px; font-family: var(--font-m); font-size: 12px;
+    line-height: 1.8; min-height: 80px; max-height: 220px;
+    overflow-y: auto; color: var(--muted);
+  }
+  .log-body .ok   { color: var(--green); }
+  .log-body .err  { color: var(--red); }
+  .log-body .warn { color: var(--yellow); }
+  .log-body .info { color: var(--blue); }
+  .log-body .key  { color: #94a3b8; }
+  .log-body .val  { color: #e2e8f0; }
+
+  /* ── CABECERAS DE SEGURIDAD ── */
+  .headers-panel {
+    width: 100%; max-width: 520px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden; display: none;
+  }
+  .headers-panel.show { display: block; }
+  .headers-title {
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    font-size: 11px; font-weight: 600; color: var(--blue); letter-spacing: .05em;
+  }
+  .headers-body {
+    padding: 16px; font-family: var(--font-m);
+    font-size: 12px; line-height: 2;
+  }
+  .hdr-name  { color: #93c5fd; }
+  .hdr-value { color: var(--green); word-break: break-all; }
+
+  /* ── PANEL BANCO (post-login) ── */
+  #panel-banco { display: none; width: 100%; max-width: 520px; gap: 20px; flex-direction: column; }
+  #panel-banco.show { display: flex; }
+
+  /* ── SALDO ── */
+  .saldo-card {
+    background: var(--surface); border: 1px solid var(--blue);
+    border-radius: 14px; padding: 24px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .saldo-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .saldo-valor { font-size: 28px; font-weight: 600; font-family: var(--font-m); color: var(--blue); }
+  .saldo-user .nombre  { font-size: 15px; font-weight: 600; text-align: right; }
+  .saldo-user .usuario { font-size: 12px; color: var(--muted); font-family: var(--font-m); text-align: right; }
+  .badge-sesion {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #3b82f615; border: 1px solid #3b82f640;
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 11px; color: var(--blue); font-family: var(--font-m); margin-top: 8px;
+  }
+
+  /* ── TRANSFERENCIA ── */
+  .transfer-card {
+    background: var(--surface); border: 1px solid var(--blue);
+    border-radius: 14px; padding: 28px;
+  }
+  .transfer-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .transfer-sub   { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+  /* ── HISTORIAL ── */
+  .historial-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+  }
+  .historial-header { padding: 14px 20px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+  .historial-empty  { padding: 24px 20px; font-size: 13px; color: var(--muted); text-align: center; }
+  .tx-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .tx-row:last-child  { border-bottom: none; }
+  .tx-left .tx-dest   { font-weight: 600; }
+  .tx-left .tx-hora   { font-size: 11px; color: var(--muted); font-family: var(--font-m); }
+  .tx-monto { font-family: var(--font-m); font-weight: 600; color: var(--blue); }
+
+  /* ── SPINNER ── */
+  .spinner-overlay {
+    display: none; position: fixed; inset: 0;
+    background: #070c14cc; z-index: 100;
+    flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  }
+  .spinner-overlay.show { display: flex; }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border);
+    border-top-color: var(--blue); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner-text { font-size: 13px; color: var(--muted); font-family: var(--font-m); }
+</style>
+</head>
+<body>
+
+<!-- SPINNER -->
+<div class="spinner-overlay" id="spinner">
+  <div class="spinner"></div>
+  <div class="spinner-text">Procesando...</div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">Banco<span>Demo</span> — Seguro</div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <div class="https-badge">🔒 HTTPS</div>
+    <button class="btn-outline" id="btn-logout" style="display:none" onclick="logout()">Salir</button>
+  </div>
+</div>
+
+<!-- DEFENSA BANNER -->
+<div class="defensa-banner" id="defensa-banner">
+  <div class="defensa-title">🛡 DEFENSAS ACTIVAS EN ESTE SERVIDOR</div>
+  <div class="defensa-item">
+    <span class="defensa-check">✓</span>
+    <span class="defensa-text"><strong>TLS/HTTPS:</strong> todo el tráfico va cifrado. El atacante solo ve bytes ilegibles.</span>
+  </div>
+  <div class="defensa-item">
+    <span class="defensa-check">✓</span>
+    <span class="defensa-text"><strong>HSTS:</strong> el navegador nunca usará HTTP para este dominio, ni aunque el atacante lo intente (SSL Stripping).</span>
+  </div>
+  <div class="defensa-item">
+    <span class="defensa-check">✓</span>
+    <span class="defensa-text"><strong>Certificado TLS:</strong> si el atacante intercepta la conexión, el navegador detecta que el certificado no corresponde y bloquea la comunicación.</span>
+  </div>
+  <div class="defensa-item">
+    <span class="defensa-check">✓</span>
+    <span class="defensa-text"><strong>CSP + X-Frame-Options:</strong> previene inyección de scripts y clickjacking.</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     VISTA LOGIN
+════════════════════════════════════════════ -->
+<div id="vista-login" style="width:100%;max-width:520px;display:flex;flex-direction:column;gap:20px">
+
+  <div class="card">
+    <div class="card-title">Iniciar sesión seguro</div>
+    <div class="card-sub">Conexión protegida con TLS y HSTS</div>
+
+    <div class="field">
+      <label for="usuario">Usuario</label>
+      <input id="usuario" type="text" value="jperez" placeholder="usuario">
+    </div>
+    <div class="field">
+      <label for="contrasena">Contraseña</label>
+      <input id="contrasena" type="password" value="MiClave123" placeholder="••••••••">
+    </div>
+
+    <button class="btn" onclick="login()">🔒 Iniciar sesión</button>
+
+    <div class="route-indicator">
+      Enviando a → <span>https://localhost:3001/login</span>
+    </div>
+  </div>
+
+  <div class="log-panel">
+    <div class="log-header">Consola de red <div class="dot" id="dot-login"></div></div>
+    <div class="log-body" id="log-login">Esperando petición...</div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════
+     VISTA BANCO (post-login)
+════════════════════════════════════════════ -->
+<div id="panel-banco">
+
+  <!-- Saldo -->
+  <div class="saldo-card">
+    <div>
+      <div class="saldo-label">Saldo disponible</div>
+      <div class="saldo-valor" id="saldo-valor">$0</div>
+      <div class="badge-sesion">🔒 Sesión HTTPS activa</div>
+    </div>
+    <div class="saldo-user">
+      <div class="nombre"  id="nombre-usuario">—</div>
+      <div class="usuario" id="tag-usuario">—</div>
+    </div>
+  </div>
+
+  <!-- Transferencia -->
+  <div class="transfer-card">
+    <div class="transfer-title">💸 Nueva transferencia</div>
+    <div class="transfer-sub">Envío seguro cifrado con TLS</div>
+
+    <div class="field">
+      <label for="tx-destino">Cuenta / Destinatario</label>
+      <input id="tx-destino" type="text" placeholder="ej. mgarcia" value="mgarcia">
+    </div>
+    <div class="field">
+      <label for="tx-monto">Monto (COP)</label>
+      <input id="tx-monto" type="number" placeholder="ej. 50000" value="100000" min="1">
+    </div>
+    <div class="field">
+      <label for="tx-desc">Descripción (opcional)</label>
+      <input id="tx-desc" type="text" placeholder="ej. Pago arriendo">
+    </div>
+
+    <button class="btn" id="btn-transferir" onclick="transferir()">🔒 Enviar transferencia segura</button>
+
+    <div class="route-indicator">
+      Enviando a → <span>https://localhost:3001/transferir</span>
+    </div>
+  </div>
+
+  <!-- Log de red -->
+  <div class="log-panel">
+    <div class="log-header">Consola de red <div class="dot" id="dot-tx"></div></div>
+    <div class="log-body" id="log-tx">Esperando acción...</div>
+  </div>
+
+  <!-- Cabeceras de seguridad -->
+  <div class="headers-panel" id="headers-panel">
+    <div class="headers-title">CABECERAS DE SEGURIDAD RECIBIDAS</div>
+    <div class="headers-body" id="headers-body"></div>
+  </div>
+
+  <!-- Historial -->
+  <div class="historial-card">
+    <div class="historial-header">📋 Historial de transferencias</div>
+    <div id="historial-body">
+      <div class="historial-empty">Sin transferencias aún.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const BASE     = 'https://localhost:3001';
+  let token      = null;
+  let historialLocal = [];
+
+  const CABECERAS_SEGURIDAD = {
+    'strict-transport-security': 'Strict-Transport-Security (HSTS)',
+    'content-security-policy':   'Content-Security-Policy (CSP)',
+    'x-frame-options':           'X-Frame-Options',
+    'x-content-type-options':    'X-Content-Type-Options',
+    'referrer-policy':           'Referrer-Policy',
+  };
+
+  // ─── Log ─────────────────────────────────────────────────
+  function logL(html) {
+    const el = document.getElementById('log-login');
+    el.innerHTML += html + '<br>'; el.scrollTop = el.scrollHeight;
+  }
+  function logT(html) {
+    const el = document.getElementById('log-tx');
+    el.innerHTML += html + '<br>'; el.scrollTop = el.scrollHeight;
+  }
+  function spinner(show) {
+    document.getElementById('spinner').classList.toggle('show', show);
+  }
+
+  // ─── Login ────────────────────────────────────────────────
+  async function login() {
+    const usuario    = document.getElementById('usuario').value.trim();
+    const contrasena = document.getElementById('contrasena').value.trim();
+    document.getElementById('log-login').innerHTML = '';
+    document.getElementById('headers-panel').classList.remove('show');
+    document.getElementById('dot-login').classList.add('active');
+
+    logL(`<span class="info">▶ POST ${BASE}/login</span>`);
+    logL(`<span class="key">  usuario   :</span> <span class="val">${usuario}</span>`);
+    logL(`<span class="key">  contraseña:</span> <span class="val">${contrasena}</span>`);
+    logL('');
+    logL(`<span class="info">  Iniciando handshake TLS...</span>`);
+    logL(`<span class="info">  Verificando certificado del servidor...</span>`);
+    logL('');
+
+    try {
+      const res  = await fetch(`${BASE}/login`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ usuario, contrasena }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        token = data.token;
+        logL(`<span class="ok">✓ ${data.mensaje}</span>`);
+        logL(`<span class="key">  protocolo :</span> <span class="val">${data.protocolo}</span>`);
+        logL(`<span class="key">  hsts      :</span> <span class="val">${data.hsts} ✓</span>`);
+        logL('');
+        logL(`<span class="ok">✓ Aunque un atacante esté en medio,</span>`);
+        logL(`<span class="ok">  solo ve datos cifrados — inútiles para él.</span>`);
+
+        // Mostrar cabeceras de seguridad
+        mostrarCabeceras(res);
+        mostrarPanelBanco(data);
+      } else {
+        logL(`<span class="err">✗ ${data.mensaje}</span>`);
+      }
+    } catch {
+      logL(`<span class="err">✗ No se pudo conectar a ${BASE}</span>`);
+      logL('');
+      logL(`<span class="key">Posibles causas:</span>`);
+      logL(`<span class="val">  1. servidor-seguro.js no está corriendo</span>`);
+      logL(`<span class="val">  2. No ejecutaste generar-cert.sh</span>`);
+      logL(`<span class="val">  3. No aceptaste el certificado:</span>`);
+      logL(`<span class="info">     → Ve a ${BASE} y acepta la advertencia</span>`);
+    }
+    document.getElementById('dot-login').classList.remove('active');
+  }
+
+  function mostrarCabeceras(res) {
+    const headersEl = document.getElementById('headers-body');
+    let html = '';
+    for (const [key, label] of Object.entries(CABECERAS_SEGURIDAD)) {
+      const val = res.headers.get(key);
+      if (val) html += `<div><span class="hdr-name">${label}:</span><br><span class="hdr-value">${val}</span></div><br>`;
+    }
+    headersEl.innerHTML = html || '<span style="color:var(--muted)">No se pudieron leer las cabeceras (CORS).</span>';
+    document.getElementById('headers-panel').classList.add('show');
+  }
+
+  function mostrarPanelBanco(loginData) {
+    document.getElementById('vista-login').style.display   = 'none';
+    document.getElementById('defensa-banner').style.display = 'none';
+    document.getElementById('panel-banco').classList.add('show');
+    document.getElementById('btn-logout').style.display    = 'block';
+    document.getElementById('nombre-usuario').textContent  = loginData.nombre || loginData.usuario;
+    document.getElementById('tag-usuario').textContent     = '@' + loginData.usuario;
+    actualizarPerfil();
+  }
+
+  async function actualizarPerfil() {
+    try {
+      const res  = await fetch(`${BASE}/perfil`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('saldo-valor').textContent = '$' + data.saldo.toLocaleString('es-CO');
+        renderHistorial();
+      }
+    } catch { /* sin conexión */ }
+  }
+
+  function renderHistorial() {
+    const body = document.getElementById('historial-body');
+    if (!historialLocal.length) {
+      body.innerHTML = '<div class="historial-empty">Sin transferencias aún.</div>';
+      return;
+    }
+    body.innerHTML = historialLocal.map(tx => `
+      <div class="tx-row">
+        <div class="tx-left">
+          <div class="tx-dest">→ ${tx.destino}</div>
+          <div class="tx-hora">${tx.hora} · ${tx.id}</div>
+          ${tx.descripcion ? `<div style="font-size:11px;color:var(--muted)">${tx.descripcion}</div>` : ''}
+        </div>
+        <div class="tx-monto">-$${tx.monto.toLocaleString('es-CO')}</div>
+      </div>
+    `).join('');
+  }
+
+  // ─── Transferir ───────────────────────────────────────────
+  async function transferir() {
+    const destino     = document.getElementById('tx-destino').value.trim();
+    const monto       = parseFloat(document.getElementById('tx-monto').value);
+    const descripcion = document.getElementById('tx-desc').value.trim();
+
+    if (!destino || isNaN(monto) || monto <= 0) {
+      alert('Completa destino y monto correctamente.');
+      return;
+    }
+
+    document.getElementById('log-tx').innerHTML = '';
+    document.getElementById('dot-tx').classList.add('active');
+    document.getElementById('btn-transferir').disabled = true;
+    spinner(true);
+
+    logT(`<span class="info">▶ POST ${BASE}/transferir</span>`);
+    logT(`<span class="key">  destino   :</span> <span class="val">${destino}</span>`);
+    logT(`<span class="key">  monto     :</span> <span class="val">$${monto.toLocaleString('es-CO')}</span>`);
+    logT('');
+    logT(`<span class="info">  Datos cifrados con TLS — el atacante no puede leerlos ni modificarlos.</span>`);
+    logT('');
+
+    try {
+      const res  = await fetch(`${BASE}/transferir`, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ destino, monto, descripcion }),
+      });
+      spinner(false);
+      const data = await res.json();
+
+      if (data.ok) {
+        logT(`<span class="ok">✓ ${data.mensaje}</span>`);
+        logT(`<span class="key">  destino   :</span> <span class="val">${data.destino}</span>`);
+        logT(`<span class="key">  monto     :</span> <span class="val">$${data.monto.toLocaleString('es-CO')}</span>`);
+        logT(`<span class="key">  saldo     :</span> <span class="val">$${data.saldo_nuevo.toLocaleString('es-CO')}</span>`);
+        logT(`<span class="key">  protocolo :</span> <span class="val">${data.protocolo} ✓</span>`);
+        logT('');
+        logT(`<span class="ok">✓ Transferencia íntegra — el atacante no pudo modificarla.</span>`);
+
+        // Guardar en historial local con los datos que el usuario envió
+        historialLocal.unshift({
+          id:          data.id,
+          hora:        new Date().toLocaleTimeString('es-CO'),
+          destino,
+          monto,
+          descripcion,
+        });
+
+        document.getElementById('saldo-valor').textContent = '$' + data.saldo_nuevo.toLocaleString('es-CO');
+        renderHistorial();
+      } else {
+        logT(`<span class="err">✗ ${data.mensaje}</span>`);
+      }
+    } catch {
+      spinner(false);
+      logT(`<span class="err">✗ No se pudo conectar a ${BASE}</span>`);
+    }
+
+    document.getElementById('dot-tx').classList.remove('active');
+    document.getElementById('btn-transferir').disabled = false;
+  }
+
+  // ─── Logout ───────────────────────────────────────────────
+  function logout() {
+    token = null;
+    historialLocal.length = 0;
+    document.getElementById('panel-banco').classList.remove('show');
+    document.getElementById('vista-login').style.display    = 'flex';
+    document.getElementById('defensa-banner').style.display = 'block';
+    document.getElementById('btn-logout').style.display     = 'none';
+    document.getElementById('log-login').innerHTML          = 'Esperando petición...';
+    document.getElementById('headers-panel').classList.remove('show');
+  }
+</script>
+</body>
+</html>

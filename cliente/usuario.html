@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BancoDemo — Iniciar sesión</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #070c14;
+    --surface:  #0e1623;
+    --surface2: #162033;
+    --border:   #1e2d45;
+    --green:    #10b981;
+    --red:      #ef4444;
+    --yellow:   #f59e0b;
+    --blue:     #3b82f6;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --font-ui:  'Inter', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px;
+    gap: 20px;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    width: 100%; max-width: 520px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .topbar-logo { font-size: 18px; font-weight: 600; }
+  .topbar-logo span { color: var(--green); }
+
+  /* ── RED SELECTOR ── */
+  .red-selector {
+    display: flex; gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px;
+  }
+  .red-btn {
+    padding: 5px 14px; border-radius: 5px; border: none;
+    cursor: pointer; font-family: var(--font-ui);
+    font-size: 13px; font-weight: 500;
+    background: transparent; color: var(--muted); transition: all .2s;
+  }
+  .red-btn.active-safe   { background: #10b98122; color: var(--green); }
+  .red-btn.active-danger { background: #ef444422; color: var(--red); }
+
+  /* ── ALERT ── */
+  .alert {
+    width: 100%; max-width: 520px;
+    padding: 10px 16px; border-radius: 8px; font-size: 13px;
+    display: none; gap: 8px; align-items: center;
+    font-family: var(--font-mono);
+  }
+  .alert.show { display: flex; }
+  .alert-safe   { background: #10b98115; border: 1px solid #10b98140; color: var(--green); }
+  .alert-danger { background: #ef444415; border: 1px solid #ef444440; color: var(--red); }
+
+  /* ── CARD ── */
+  .card {
+    width: 100%; max-width: 520px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 32px; transition: border-color .3s;
+  }
+  .card.danger { border-color: var(--red); }
+  .card.safe   { border-color: var(--green); }
+  .card-title  { font-size: 20px; font-weight: 600; }
+  .card-sub    { font-size: 13px; color: var(--muted); margin-top: 4px; margin-bottom: 24px; }
+
+  label  { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+  .field { margin-bottom: 18px; }
+  input[type="text"], input[type="password"], input[type="number"] {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: var(--font-mono);
+    font-size: 14px; padding: 10px 14px; outline: none; transition: border-color .2s;
+  }
+  input:focus { border-color: var(--blue); }
+
+  .btn {
+    width: 100%; padding: 11px; border-radius: 8px; border: none;
+    font-family: var(--font-ui); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: opacity .2s;
+  }
+  .btn:hover   { opacity: .85; }
+  .btn:disabled{ opacity: .4; cursor: not-allowed; }
+  .btn-safe    { background: var(--green);  color: #071210; }
+  .btn-danger  { background: var(--red);    color: #fff; }
+  .btn-blue    { background: var(--blue);   color: #fff; }
+  .btn-outline {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font-ui);
+    font-size: 13px; padding: 8px 16px; border-radius: 8px;
+    cursor: pointer; transition: all .2s;
+  }
+  .btn-outline:hover { border-color: var(--red); color: var(--red); }
+
+  .route-indicator {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--muted); text-align: center; margin-top: 12px;
+  }
+  .route-indicator span { color: var(--text); }
+
+  /* ── LOG ── */
+  .log-panel {
+    width: 100%; max-width: 520px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+  }
+  .log-header {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .05em;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.active { background: var(--green); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.3 } }
+  .log-body {
+    padding: 16px; font-family: var(--font-mono); font-size: 12px;
+    line-height: 1.8; min-height: 80px; max-height: 200px;
+    overflow-y: auto; color: var(--muted);
+  }
+  .log-body .ok   { color: var(--green); }
+  .log-body .err  { color: var(--red); }
+  .log-body .warn { color: var(--yellow); }
+  .log-body .info { color: var(--blue); }
+  .log-body .key  { color: #94a3b8; }
+  .log-body .val  { color: #e2e8f0; }
+
+  /* ── PANEL BANCO (post-login) ── */
+  #panel-banco { display: none; width: 100%; max-width: 520px; gap: 20px; flex-direction: column; }
+  #panel-banco.show { display: flex; }
+
+  /* ── SALDO ── */
+  .saldo-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .saldo-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .saldo-valor { font-size: 28px; font-weight: 600; font-family: var(--font-mono); color: var(--green); }
+  .saldo-user  { text-align: right; }
+  .saldo-user .nombre { font-size: 15px; font-weight: 600; }
+  .saldo-user .usuario { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+  .badge-sesion {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #10b98115; border: 1px solid #10b98140;
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 11px; color: var(--green); font-family: var(--font-mono);
+    margin-top: 8px;
+  }
+
+  /* ── TRANSFERENCIA ── */
+  .transfer-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 28px; transition: border-color .3s;
+  }
+  .transfer-card.danger { border-color: var(--red); }
+  .transfer-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .transfer-sub   { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+  /* ── HISTORIAL ── */
+  .historial-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+  }
+  .historial-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    font-size: 13px; font-weight: 600;
+  }
+  .historial-empty {
+    padding: 24px 20px; font-size: 13px; color: var(--muted); text-align: center;
+  }
+  .tx-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .tx-row:last-child { border-bottom: none; }
+  .tx-left  .tx-dest  { font-weight: 600; }
+  .tx-left  .tx-hora  { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+  .tx-left  .tx-desc  { font-size: 11px; color: var(--muted); }
+  .tx-monto { font-family: var(--font-mono); font-weight: 600; color: var(--red); }
+  .tx-monto.modificado { color: var(--yellow); }
+
+  /* ── ADVERTENCIA MITM ── */
+  .mitm-warning {
+    background: #7f1d1d22; border: 1px solid #ef444440;
+    border-radius: 10px; padding: 14px 18px;
+    font-size: 12px; color: var(--red); font-family: var(--font-mono);
+    line-height: 1.8;
+  }
+  .mitm-warning.hide { display: none; }
+
+  /* ── SPINNER ── */
+  .spinner-overlay {
+    display: none; position: fixed; inset: 0;
+    background: #070c14cc; z-index: 100;
+    flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  }
+  .spinner-overlay.show { display: flex; }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border);
+    border-top-color: var(--blue); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner-text { font-size: 13px; color: var(--muted); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+
+<!-- SPINNER -->
+<div class="spinner-overlay" id="spinner">
+  <div class="spinner"></div>
+  <div class="spinner-text" id="spinner-msg">Procesando...</div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">Banco<span>Demo</span></div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <div class="red-selector" id="red-selector">
+      <button class="red-btn active-safe"   id="btn-safe"   onclick="setRed('safe')">🟢 Red normal</button>
+      <button class="red-btn"               id="btn-danger" onclick="setRed('danger')">🔴 Red comprometida</button>
+    </div>
+    <button class="btn-outline" id="btn-logout" style="display:none" onclick="logout()">Salir</button>
+  </div>
+</div>
+
+<!-- ALERT -->
+<div class="alert alert-danger show" id="alert-danger">
+  ⚠️ Red comprometida — tus datos pasan por el atacante en el puerto 8080.
+</div>
+<div class="alert alert-safe" id="alert-safe">
+  ✓ Conexión directa al servidor legítimo (puerto 3000).
+</div>
+
+<!-- ════════════════════════════════════════════
+     VISTA LOGIN
+════════════════════════════════════════════ -->
+<div id="vista-login" style="width:100%;max-width:520px;display:flex;flex-direction:column;gap:20px">
+
+  <div class="card danger" id="login-card">
+    <div class="card-title">Iniciar sesión</div>
+    <div class="card-sub">Ingresa tus credenciales para acceder</div>
+
+    <div class="field">
+      <label for="usuario">Usuario</label>
+      <input id="usuario" type="text" placeholder="tu_usuario" value="jperez">
+    </div>
+    <div class="field">
+      <label for="contrasena">Contraseña</label>
+      <input id="contrasena" type="password" placeholder="••••••••" value="MiClave123">
+    </div>
+
+    <button class="btn btn-danger" id="submit-btn" onclick="login()">Iniciar sesión</button>
+
+    <div class="route-indicator" id="route-label">
+      Enviando a → <span id="route-url">http://localhost:8080/login</span>
+    </div>
+  </div>
+
+  <div class="log-panel">
+    <div class="log-header">Consola de red <div class="dot" id="dot-login"></div></div>
+    <div class="log-body" id="log-login">Esperando petición...</div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════
+     VISTA BANCO (post-login)
+════════════════════════════════════════════ -->
+<div id="panel-banco">
+
+  <!-- Saldo -->
+  <div class="saldo-card">
+    <div>
+      <div class="saldo-label">Saldo disponible</div>
+      <div class="saldo-valor" id="saldo-valor">$0</div>
+      <div class="badge-sesion">● Sesión activa</div>
+    </div>
+    <div class="saldo-user">
+      <div class="nombre" id="nombre-usuario">—</div>
+      <div class="usuario" id="tag-usuario">—</div>
+    </div>
+  </div>
+
+  <!-- Advertencia MitM (solo en modo comprometido) -->
+  <div class="mitm-warning hide" id="mitm-warning">
+    ⚠ ATENCIÓN: estás en red comprometida.<br>
+    El atacante puede interceptar y <strong>modificar</strong> tu transferencia<br>
+    antes de que llegue al banco. Revisa el panel en localhost:8081
+  </div>
+
+  <!-- Formulario de transferencia -->
+  <div class="transfer-card" id="transfer-card">
+    <div class="transfer-title">💸 Nueva transferencia</div>
+    <div class="transfer-sub">Envía dinero a otra cuenta</div>
+
+    <div class="field">
+      <label for="tx-destino">Cuenta / Destinatario</label>
+      <input id="tx-destino" type="text" placeholder="ej. mgarcia" value="mgarcia">
+    </div>
+    <div class="field">
+      <label for="tx-monto">Monto (COP)</label>
+      <input id="tx-monto" type="number" placeholder="ej. 50000" value="100000" min="1">
+    </div>
+    <div class="field">
+      <label for="tx-desc">Descripción (opcional)</label>
+      <input id="tx-desc" type="text" placeholder="ej. Pago arriendo">
+    </div>
+
+    <button class="btn btn-danger" id="btn-transferir" onclick="transferir()">Enviar transferencia</button>
+
+    <div class="route-indicator">
+      Enviando a → <span id="route-tx"></span>
+    </div>
+  </div>
+
+  <!-- Log de red -->
+  <div class="log-panel">
+    <div class="log-header">Consola de red <div class="dot" id="dot-tx"></div></div>
+    <div class="log-body" id="log-tx">Esperando acción...</div>
+  </div>
+
+  <!-- Historial -->
+  <div class="historial-card">
+    <div class="historial-header">📋 Historial de transferencias</div>
+    <div id="historial-body">
+      <div class="historial-empty">Sin transferencias aún.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ─── Estado ───────────────────────────────────────────────
+  let modo  = 'danger';
+  let token = null;
+  let saldoActual = 0;
+  const historialLocal = []; // lo que el usuario creyó enviar
+
+  const PUERTOS = { safe: 3000, danger: 8080 };
+
+  function puerto()  { return PUERTOS[modo]; }
+  function baseUrl() { return `http://localhost:${puerto()}`; }
+
+  // ─── Utilidades de log ────────────────────────────────────
+  function logL(html) {
+    const el = document.getElementById('log-login');
+    el.innerHTML += html + '<br>';
+    el.scrollTop  = el.scrollHeight;
+  }
+  function logT(html) {
+    const el = document.getElementById('log-tx');
+    el.innerHTML += html + '<br>';
+    el.scrollTop  = el.scrollHeight;
+  }
+  function clearLogL() { document.getElementById('log-login').innerHTML = ''; }
+  function clearLogT() { document.getElementById('log-tx').innerHTML    = ''; }
+
+  function spinner(show, msg = 'Procesando...') {
+    document.getElementById('spinner').classList.toggle('show', show);
+    document.getElementById('spinner-msg').textContent = msg;
+  }
+
+  // ─── Selector de red ──────────────────────────────────────
+  function setRed(m) {
+    modo = m;
+    const loginCard    = document.getElementById('login-card');
+    const transferCard = document.getElementById('transfer-card');
+    const btnSubmit    = document.getElementById('submit-btn');
+    const btnTx        = document.getElementById('btn-transferir');
+    const mitmWarn     = document.getElementById('mitm-warning');
+
+    if (m === 'danger') {
+      loginCard.className    = 'card danger';
+      transferCard.className = 'transfer-card danger';
+      btnSubmit.className    = 'btn btn-danger';
+      btnTx.className        = 'btn btn-danger';
+      mitmWarn.classList.remove('hide');
+      document.getElementById('alert-danger').classList.add('show');
+      document.getElementById('alert-safe').classList.remove('show');
+      document.getElementById('btn-safe').classList.remove('active-safe');
+      document.getElementById('btn-danger').classList.add('active-danger');
+    } else {
+      loginCard.className    = 'card safe';
+      transferCard.className = 'transfer-card safe';
+      btnSubmit.className    = 'btn btn-safe';
+      btnTx.className        = 'btn btn-safe';
+      mitmWarn.classList.add('hide');
+      document.getElementById('alert-safe').classList.add('show');
+      document.getElementById('alert-danger').classList.remove('show');
+      document.getElementById('btn-danger').classList.remove('active-danger');
+      document.getElementById('btn-safe').classList.add('active-safe');
+    }
+    actualizarRutas();
+  }
+
+  function actualizarRutas() {
+    document.getElementById('route-url').textContent = `http://localhost:${puerto()}/login`;
+    document.getElementById('route-tx').textContent  = `http://localhost:${puerto()}/transferir`;
+  }
+
+  setRed('danger');
+
+  // ─── Login ────────────────────────────────────────────────
+  async function login() {
+    const usuario    = document.getElementById('usuario').value.trim();
+    const contrasena = document.getElementById('contrasena').value.trim();
+    clearLogL();
+    document.getElementById('dot-login').classList.add('active');
+
+    const url = `${baseUrl()}/login`;
+    logL(`<span class="ok">▶ POST ${url}</span>`);
+    logL(`<span class="key">  usuario   :</span> <span class="val">${usuario}</span>`);
+    logL(`<span class="key">  contraseña:</span> <span class="val">${contrasena}</span>`);
+    logL('');
+    if (modo === 'danger') {
+      logL(`<span class="warn">⚠ Pasando por el atacante en puerto 8080...</span>`);
+      logL('');
+    }
+
+    try {
+      const res  = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario, contrasena }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        token = data.token;
+        logL(`<span class="ok">✓ Login exitoso — token recibido</span>`);
+        if (modo === 'danger') {
+          logL(`<span class="err">🚨 El atacante también capturó estas credenciales.</span>`);
+          logL(`<span class="err">   Mira el panel en http://localhost:8081</span>`);
+        }
+        await mostrarPanelBanco(data);
+      } else {
+        logL(`<span class="err">✗ ${data.mensaje}</span>`);
+      }
+    } catch {
+      logL(`<span class="err">✗ No se pudo conectar al puerto ${puerto()}.</span>`);
+      logL(`<span class="err">  ¿Están corriendo los servidores?</span>`);
+    }
+
+    document.getElementById('dot-login').classList.remove('active');
+  }
+
+  // ─── Mostrar panel banco ──────────────────────────────────
+  async function mostrarPanelBanco(loginData) {
+    document.getElementById('vista-login').style.display = 'none';
+    document.getElementById('panel-banco').classList.add('show');
+    document.getElementById('red-selector').style.display = 'none';
+    document.getElementById('btn-logout').style.display   = 'block';
+
+    document.getElementById('nombre-usuario').textContent = loginData.nombre || loginData.usuario;
+    document.getElementById('tag-usuario').textContent    = '@' + loginData.usuario;
+
+    await actualizarPerfil();
+  }
+
+  async function actualizarPerfil() {
+    try {
+      const res  = await fetch(`${baseUrl()}/perfil`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.ok) {
+        saldoActual = data.saldo;
+        document.getElementById('saldo-valor').textContent =
+          '$' + data.saldo.toLocaleString('es-CO');
+        // El historial lo renderizamos desde historialLocal (lo que el usuario creyó enviar)
+        // para no mostrar los datos modificados por el atacante
+        renderHistorialLocal();
+      }
+    } catch { /* sin conexión */ }
+  }
+
+  function renderHistorialLocal() {
+    const body = document.getElementById('historial-body');
+    if (!historialLocal.length) {
+      body.innerHTML = '<div class="historial-empty">Sin transferencias aún.</div>';
+      return;
+    }
+    body.innerHTML = historialLocal.map(tx => `
+      <div class="tx-row">
+        <div class="tx-left">
+          <div class="tx-dest">→ ${tx.destino}${tx.fueModificado && tx.destinoReal !== tx.destino ? ` <span style="color:var(--red);font-size:11px">(banco recibió: ${tx.destinoReal})</span>` : ''}</div>
+          <div class="tx-hora">${tx.hora} · ${tx.id}</div>
+          ${tx.descripcion ? `<div class="tx-desc">${tx.descripcion}</div>` : ''}
+          ${tx.fueModificado ? `<div class="tx-desc" style="color:var(--red)">⚠ Transferencia manipulada por atacante</div>` : ''}
+        </div>
+        <div class="tx-monto ${tx.fueModificado ? 'modificado' : ''}">
+          -$${tx.monto.toLocaleString('es-CO')}
+          ${tx.fueModificado && tx.montoReal !== tx.monto ? `<div style="font-size:10px;color:var(--red)">(banco cobró: $${tx.montoReal.toLocaleString('es-CO')})</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ─── Transferir ───────────────────────────────────────────
+  async function transferir() {
+    const destino     = document.getElementById('tx-destino').value.trim();
+    const monto       = parseFloat(document.getElementById('tx-monto').value);
+    const descripcion = document.getElementById('tx-desc').value.trim();
+
+    if (!destino || isNaN(monto) || monto <= 0) {
+      alert('Completa destino y monto correctamente.');
+      return;
+    }
+
+    clearLogT();
+    document.getElementById('dot-tx').classList.add('active');
+    document.getElementById('btn-transferir').disabled = true;
+
+    const url = `${baseUrl()}/transferir`;
+    logT(`<span class="ok">▶ POST ${url}</span>`);
+    logT(`<span class="key">  destino   :</span> <span class="val">${destino}</span>`);
+    logT(`<span class="key">  monto     :</span> <span class="val">$${monto.toLocaleString('es-CO')}</span>`);
+    if (descripcion) logT(`<span class="key">  desc      :</span> <span class="val">${descripcion}</span>`);
+    logT('');
+
+    if (modo === 'danger') {
+      logT(`<span class="warn">⚠ La transferencia pasa por el atacante (8080).</span>`);
+      logT(`<span class="warn">  El atacante puede modificar el monto o destino.</span>`);
+      logT(`<span class="info">  Esperando decisión del atacante...</span>`);
+      spinner(true, 'Esperando al atacante...');
+    }
+
+    try {
+      const res  = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ destino, monto, descripcion }),
+      });
+      spinner(false);
+      const data = await res.json();
+
+    if (data.ok) {
+        const montoServidor   = data.monto;
+        const destinoServidor = data.destino;
+        const fueModificado   = montoServidor !== monto || destinoServidor !== destino;
+
+        // Guardar en historial local lo que el usuario creyó enviar
+        historialLocal.unshift({
+          id:          data.id,
+          hora:        new Date().toLocaleTimeString('es-CO'),
+          destino,
+          monto,
+          descripcion,
+          fueModificado,
+          montoReal:   montoServidor,
+          destinoReal: destinoServidor,
+        });
+        renderHistorialLocal();
+
+        // La víctima ve lo que ella ingresó, no lo que llegó al servidor
+        logT(`<span class="ok">✓ Transferencia confirmada por el banco</span>`);
+        logT(`<span class="key">  destino   :</span> <span class="val">${destino}</span>`);
+        logT(`<span class="key">  monto     :</span> <span class="val">$${monto.toLocaleString('es-CO')}</span>`);
+        //logT(`<span class="key">  saldo     :</span> <span class="val">$${data.saldo_nuevo.toLocaleString('es-CO')}</span>`);
+
+        if (fueModificado && modo === 'danger') {
+          logT('');
+          logT(`<span class="err">🚨 ¡EL ATACANTE MODIFICÓ TU TRANSFERENCIA!</span>`);
+          logT(`<span class="err">   El banco recibió datos distintos a los que enviaste:</span>`);
+          if (montoServidor !== monto)
+            logT(`<span class="err">   Monto   enviado: $${monto.toLocaleString('es-CO')} → banco procesó: $${montoServidor.toLocaleString('es-CO')}</span>`);
+          if (destinoServidor !== destino)
+            logT(`<span class="err">   Destino enviado: ${destino} → banco procesó: ${destinoServidor}</span>`);
+        } else if (modo === 'danger') {
+          logT('');
+          logT(`<span class="warn">El atacante aprobó sin modificar esta vez.</span>`);
+        }
+
+        saldoActual = data.saldo_nuevo;
+        document.getElementById('saldo-valor').textContent =
+          '$' + data.saldo_nuevo.toLocaleString('es-CO');
+        await actualizarPerfil();
+      } else {
+        spinner(false);
+        logT(`<span class="err">✗ ${data.mensaje}</span>`);
+      }
+    } catch {
+      spinner(false);
+      logT(`<span class="err">✗ No se pudo conectar.</span>`);
+    }
+
+    document.getElementById('dot-tx').classList.remove('active');
+    document.getElementById('btn-transferir').disabled = false;
+  }
+
+  // ─── Logout ───────────────────────────────────────────────
+  function logout() {
+    token = null;
+    historialLocal.length = 0;
+    document.getElementById('panel-banco').classList.remove('show');
+    document.getElementById('vista-login').style.display = 'flex';
+    document.getElementById('red-selector').style.display = '';
+    document.getElementById('btn-logout').style.display   = 'none';
+    clearLogL();
+    document.getElementById('log-login').textContent = 'Esperando petición...';
+    setRed(modo);
+  }
+</script>
+</body>
+</html>

